@@ -40,7 +40,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     private File mApkFile;
     private boolean mIsManual = false;
     private boolean mIsWifiOnly = false;
-
+    private int mInstallRequestCode;
     private UpdateInfo mInfo;
     private UpdateError mError = null;
 
@@ -54,7 +54,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     private OnDownloadListener mOnDownloadListener;
     private OnDownloadListener mOnNotificationDownloadListener;
 
-    public UpdateAgent(Context context, String url, boolean isManual, boolean isWifiOnly, int notifyId) {
+    public UpdateAgent(Context context, String url, boolean isManual, boolean isWifiOnly, int notifyId, int installRequestCode) {
         mContext = context.getApplicationContext();
         mUrl = url;
         mIsManual = isManual;
@@ -68,6 +68,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
         } else {
             mOnNotificationDownloadListener = new DefaultDownloadListener();
         }
+        mInstallRequestCode = installRequestCode;
     }
 
 
@@ -127,7 +128,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     @Override
     public void update() {
         mApkFile = new File(mContext.getExternalCacheDir(), mInfo.md5 + ".apk");
-        if (UpdateUtil.verify(mApkFile, mInfo.md5)) {
+        if (UpdateUtil.verify(mApkFile, mInfo.md5, mInfo.isIgnoreMd5)) {
             doInstall();
         } else {
             doDownload();
@@ -233,7 +234,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
                 mTmpFile = new File(mContext.getExternalCacheDir(), info.md5);
                 mApkFile = new File(mContext.getExternalCacheDir(), info.md5 + ".apk");
 
-                if (UpdateUtil.verify(mApkFile, mInfo.md5)) {
+                if (UpdateUtil.verify(mApkFile, mInfo.md5, mInfo.isIgnoreMd5)) {
                     doInstall();
                 } else if (info.isSilent) {
                     doDownload();
@@ -254,7 +255,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     }
 
     void doInstall() {
-        UpdateUtil.install(mContext, mApkFile, mInfo.isForce);
+        UpdateUtil.install(mContext, mApkFile, mInfo.isForce, mInstallRequestCode);
     }
 
     void doFailure(UpdateError error) {
@@ -298,7 +299,14 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
             }
             final UpdateInfo info = agent.getInfo();
             String size = Formatter.formatShortFileSize(mContext, info.size);
-            String content = String.format("最新版本：%1$s\n新版本大小：%2$s\n\n更新内容\n%3$s", info.versionName, size, info.updateContent);
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("最新版本：").append(info.versionName).append("\n");
+            if(info.size !=0){
+                buffer.append("新版本大小：").append(size).append("\n\n");
+            }
+            buffer.append("更新内容\n\n").append(info.updateContent);
+            String content = buffer.toString();
+            //String content = String.format("最新版本：%1$s\n新版本大小：%2$s\n\n更新内容\n\n%3$s", info.versionName, size, info.updateContent);
 
             final AlertDialog dialog = new AlertDialog.Builder(mContext).create();
 

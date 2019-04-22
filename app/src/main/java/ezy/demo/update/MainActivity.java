@@ -16,11 +16,17 @@
 
 package ezy.demo.update;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import ezy.boost.update.ICheckAgent;
 import ezy.boost.update.IUpdateChecker;
@@ -35,8 +41,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     String mCheckUrl = "http://client.waimai.baidu.com/message/updatetag";
 
-    String mUpdateUrl = "http://mobile.ac.qq.com/qqcomic_android.apk";
-
+    String mUpdateUrl = "http://m2.dytt8.net/dytt8.apk";
+    public static final int INSTALL_PERMISS_CODE = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e("ezy.update", "checking");
                 agent.setInfo("");
             }
-        }).setUrl(mCheckUrl).setManual(isManual).setNotifyId(notifyId).setParser(new IUpdateParser() {
+        }).setUrl(mCheckUrl).setManual(isManual).setInstallRequestCode(INSTALL_PERMISS_CODE).setNotifyId(notifyId).setParser(new IUpdateParser() {
             @Override
             public UpdateInfo parse(String source) throws Exception {
                 UpdateInfo info = new UpdateInfo();
@@ -73,7 +79,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 info.versionCode = 587;
                 info.versionName = "v5.8.7";
                 info.url = mUpdateUrl;
-                info.md5 = "56cf48f10e4cf6043fbf53bbbc4009e3";
+                info.isIgnoreMd5 = true;
+                //info.md5 = "56cf48f10e4cf6043fbf53bbbc4009e3";
+                info.md5 = md5(info.url + "_" + info.versionCode);
                 info.size = 10149314;
                 info.isForce = isForce;
                 info.isIgnorable = isIgnorable;
@@ -82,7 +90,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }).check();
     }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if (resultCode == RESULT_OK && requestCode == INSTALL_PERMISS_CODE) {
+            UpdateManager.install(this, INSTALL_PERMISS_CODE);
+        }
+    }
+
+    @NonNull
+    public static String md5(String string) {
+        if (TextUtils.isEmpty(string)) {
+            return "";
+        }
+        MessageDigest md5 = null;
+        try {
+            md5 = MessageDigest.getInstance("MD5");
+            byte[] bytes = md5.digest(string.getBytes());
+            StringBuilder result = new StringBuilder();
+            for (byte b : bytes) {
+                String temp = Integer.toHexString(b & 0xff);
+                if (temp.length() == 1) {
+                    temp = "0" + temp;
+                }
+                result.append(temp);
+            }
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
 
     @Override
     public void onClick(View v) {

@@ -1,18 +1,14 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-
-group='com.github.czy1121'
-version='1.1.1'
-archivesBaseName='update'
+apply plugin: 'maven'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
 
     defaultConfig {
 
         minSdkVersion 16
-        targetSdkVersion 24
+        targetSdkVersion 26
         versionCode 1
         versionName version
 
@@ -57,4 +53,18 @@ artifacts {
     archives javadocJar
 }
 
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: POM_LOCAL_URL)
+            pom.groupId = POM_GROUP
+            pom.artifactId = POM_ARTIFACTID
+            pom.version = POM_VERSION
+            pom.packaging = POM_PACKAGING
+
+        }
+    }
+
+}
 

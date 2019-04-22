@@ -16,7 +16,9 @@
 
 package ezy.boost.update;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -26,6 +28,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.util.Log;
@@ -36,15 +40,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.Map;
 
 public class UpdateUtil {
     private static final String TAG = "ezy.update";
     private static final String PREFS = "ezy.update.prefs";
     private static final String KEY_IGNORE = "ezy.update.prefs.ignore";
     private static final String KEY_UPDATE = "ezy.update.prefs.update";
-
     static boolean DEBUG = true;
 
     public static void log(String content) {
@@ -106,16 +111,27 @@ public class UpdateUtil {
         return !TextUtils.isEmpty(md5) && md5.equals(context.getSharedPreferences(PREFS, 0).getString(KEY_IGNORE, ""));
     }
 
-    public static void install(Context context, boolean force) {
+    public static void install(Context context, boolean force, int installRequestCode) {
         String md5 = context.getSharedPreferences(PREFS, 0).getString(KEY_UPDATE, "");
         File apk = new File(context.getExternalCacheDir(), md5 + ".apk");
-        if (UpdateUtil.verify(apk, md5)) {
+        /*if (UpdateUtil.verify(apk, md5)) {
             install(context, apk, force);
-        }
+        }*/
+        install(context, apk, force, installRequestCode);
     }
 
-    public static void install(Context context, File file, boolean force) {
+    public static void install(Context context, File file, boolean force, int installRequestCode) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            //先判断是否有安装未知来源应用的权限
+            boolean haveInstallPermission = context.getPackageManager().canRequestPackageInstalls();
+            if(!haveInstallPermission){
+                //弹框提示用户手动打开
+                toInstallPermissionSettingIntent(context,installRequestCode);
+                return;
+            }
+        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             intent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
         } else {
@@ -130,19 +146,58 @@ public class UpdateUtil {
         }
     }
 
-    public static boolean verify(File apk, String md5) {
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private static void toInstallPermissionSettingIntent(Context context, int installRequestCode) {
+        Uri packageURI = Uri.parse("package:"+ context.getPackageName());
+        Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,packageURI);
+        Activity activity = getCurrentActivity();
+        if(activity != null){
+            getCurrentActivity().startActivityForResult(intent, installRequestCode);
+        }
+    }
+
+    private static Activity getCurrentActivity() {
+        try {
+            Class cls = Class.forName("android.app.ActivityThread");
+            Object invoke = cls.getMethod("currentActivityThread", new Class[0]).invoke(null, new
+                    Object[0]);
+            Field declaredField = cls.getDeclaredField("mActivities");
+            declaredField.setAccessible(true);
+            for (Object invoke2 : ((Map) declaredField.get(invoke)).values()) {
+                Class cls2 = invoke2.getClass();
+                Field declaredField2 = cls2.getDeclaredField("paused");
+                declaredField2.setAccessible(true);
+                if (!declaredField2.getBoolean(invoke2)) {
+                    declaredField = cls2.getDeclaredField("activity");
+                    declaredField.setAccessible(true);
+                    return (Activity) declaredField.get(invoke2);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static boolean verify(File apk, String md5,boolean isIgnoreMd5) {
         if (!apk.exists()) {
             return false;
         }
-        String _md5 = md5(apk);
-        if (TextUtils.isEmpty(_md5)) {
-            return false;
+        if(isIgnoreMd5){
+            return true;
         }
-        boolean result = _md5 != null && _md5.equalsIgnoreCase(md5);
-        if (!result) {
-            apk.delete();
+        else {
+            String _md5 = md5(apk);
+            if (TextUtils.isEmpty(_md5)) {
+                return false;
+            }
+            boolean result = _md5 != null && _md5.equalsIgnoreCase(md5);
+            if (!result) {
+                apk.delete();
+            }
+            return result;
         }
-        return result;
+
     }
 
 

@@ -32,6 +32,8 @@ public class UpdateInfo {
     public boolean isIgnorable = true;
     // 一天内最大提示次数，<1时不限
     public int maxTimes = 0;
+    // 是否忽略校验
+    public boolean isIgnoreMd5 = false;
 
     public int versionCode;
     public String versionName;
@@ -66,6 +68,7 @@ public class UpdateInfo {
         info.updateContent = o.optString("updateContent");
 
         info.url = o.optString("url");
+        info.isIgnoreMd5 = o.optBoolean("isIgnoreMd5");
         info.md5 = o.optString("md5");
         info.size = o.optLong("size", 0);
 

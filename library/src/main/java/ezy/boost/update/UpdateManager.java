@@ -43,9 +43,9 @@ public class UpdateManager {
         UpdateUtil.DEBUG = debuggable;
     }
 
-    public static void install(Context context) {
+    public static void install(Context context, int installRequestCode) {
 
-        UpdateUtil.install(context, true);
+        UpdateUtil.install(context, true, installRequestCode);
     }
 
     public static void check(Context context) {
@@ -68,6 +68,7 @@ public class UpdateManager {
         private boolean mIsManual;
         private boolean mIsWifiOnly;
         private int mNotifyId = 0;
+        private int mInstallRequestCode  = 1;
 
         private OnDownloadListener mOnNotificationDownloadListener;
         private OnDownloadListener mOnDownloadListener;
@@ -102,6 +103,10 @@ public class UpdateManager {
 
         public Builder setManual(boolean isManual) {
             mIsManual = isManual;
+            return this;
+        }
+        public Builder setInstallRequestCode(int installRequestCode) {
+            mInstallRequestCode = installRequestCode;
             return this;
         }
 
@@ -156,7 +161,7 @@ public class UpdateManager {
                 mUrl = UpdateUtil.toCheckUrl(mContext, sUrl, sChannel);
             }
 
-            UpdateAgent agent = new UpdateAgent(mContext, mUrl, mIsManual, mIsWifiOnly, mNotifyId);
+            UpdateAgent agent = new UpdateAgent(mContext, mUrl, mIsManual, mIsWifiOnly, mNotifyId, mInstallRequestCode);
             if (mOnNotificationDownloadListener != null) {
                 agent.setOnNotificationDownloadListener(mOnNotificationDownloadListener);
             }

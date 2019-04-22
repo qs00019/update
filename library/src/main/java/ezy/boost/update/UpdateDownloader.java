@@ -80,9 +80,9 @@ class UpdateDownloader extends AsyncTask<Void, Integer, Long> {
                 mAgent.setError(new UpdateError(UpdateError.DOWNLOAD_CANCELLED));
             } else if (result == -1) {
                 mAgent.setError(new UpdateError(UpdateError.DOWNLOAD_UNKNOWN));
-            } else if (!UpdateUtil.verify(mTemp, mTemp.getName())) {
+            } /*else if (!UpdateUtil.verify(mTemp, mTemp.getName())) {
                 mAgent.setError(new UpdateError(UpdateError.DOWNLOAD_VERIFY));
-            }
+            }*/
         } catch (UpdateError e) {
             mAgent.setError(e);
         } catch (FileNotFoundException e) {
