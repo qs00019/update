@@ -48,6 +48,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     private IUpdateChecker mChecker;
     private IUpdateDownloader mDownloader;
     private IUpdatePrompter mPrompter;
+    private IInstallPrompter mInstallPrompter;
 
     private OnFailureListener mOnFailureListener;
 
@@ -61,6 +62,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
         mIsWifiOnly = isWifiOnly;
         mDownloader = new DefaultUpdateDownloader(mContext);
         mPrompter = new DefaultUpdatePrompter(context);
+        mInstallPrompter = new InstallPrompter(context);
         mOnFailureListener = new DefaultFailureListener(context);
         mOnDownloadListener = new DefaultDialogDownloadListener(context);
         if (notifyId > 0) {
@@ -235,7 +237,11 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
                 mApkFile = new File(mContext.getExternalCacheDir(), info.md5 + ".apk");
 
                 if (UpdateUtil.verify(mApkFile, mInfo.md5, mInfo.isIgnoreMd5)) {
-                    doInstall();
+                    if(mIsManual)
+                        doInstall();
+                    else {
+                        mInstallPrompter.prompt(this, info);
+                    }
                 } else if (info.isSilent) {
                     doDownload();
                 } else {
@@ -254,7 +260,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
         mDownloader.download(this, mInfo.url, mTmpFile);
     }
 
-    void doInstall() {
+    public void doInstall() {
         UpdateUtil.install(mContext, mApkFile, mInfo.isForce, mInstallRequestCode);
     }
 
@@ -337,6 +343,52 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
                 if (info.isIgnorable) {
                     dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "忽略该版", listener);
                 }
+            }
+            dialog.show();
+        }
+    }
+
+    private static class InstallPrompter implements IInstallPrompter {
+
+        private Context mContext;
+
+        public InstallPrompter(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        public void prompt(IUpdateAgent agent, UpdateInfo info) {
+            if (mContext instanceof Activity && ((Activity) mContext).isFinishing()) {
+                return;
+            }
+
+            String content = "已为你准备好安装包，是否安装";
+            //String content = String.format("最新版本：%1$s\n新版本大小：%2$s\n\n更新内容\n\n%3$s", info.versionName, size, info.updateContent);
+
+            final AlertDialog dialog = new AlertDialog.Builder(mContext).create();
+
+            dialog.setTitle("应用安装");
+            dialog.setCancelable(false);
+            dialog.setCanceledOnTouchOutside(false);
+
+
+            float density = mContext.getResources().getDisplayMetrics().density;
+            TextView tv = new TextView(mContext);
+            tv.setMovementMethod(new ScrollingMovementMethod());
+            tv.setVerticalScrollBarEnabled(true);
+            tv.setTextSize(14);
+            tv.setMaxHeight((int) (250 * density));
+
+            dialog.setView(tv, (int) (25 * density), (int) (15 * density), (int) (25 * density), 0);
+
+
+            DialogInterface.OnClickListener listener = new DefaultInstallClickListener(agent);
+
+            tv.setText(content);
+            dialog.setButton(DialogInterface.BUTTON_POSITIVE, "立即安装", listener);
+            dialog.setButton(DialogInterface.BUTTON_NEGATIVE, "以后再说", listener);
+            if (info.isIgnorable) {
+                dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "忽略该版", listener);
             }
             dialog.show();
         }

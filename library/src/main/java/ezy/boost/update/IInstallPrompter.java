@@ -16,12 +16,6 @@
 
 package ezy.boost.update;
 
-public interface IUpdateAgent {
-    UpdateInfo getInfo();
-
-    void update();
-
-    void ignore();
-
-    void doInstall();
+public interface IInstallPrompter {
+    void prompt(IUpdateAgent agent, UpdateInfo updateInfo);
 }
