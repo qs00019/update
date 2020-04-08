@@ -172,7 +172,11 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
         } else {
             mTmpFile.renameTo(mApkFile);
             if (mInfo.isAutoInstall) {
-                doInstall();
+                if(mIsManual)
+                    doInstall();
+                else {
+                    mInstallPrompter.prompt(this, getInfo());
+                }
             }
         }
 
@@ -242,7 +246,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
                     else {
                         mInstallPrompter.prompt(this, info);
                     }
-                } else if (info.isSilent) {
+                } else if (info.isSilent && !mIsManual) {
                     doDownload();
                 } else {
                     doPrompt();
@@ -362,15 +366,21 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
                 return;
             }
 
-            String content = "已为你准备好安装包，是否安装";
+            String size = Formatter.formatShortFileSize(mContext, info.size);
+            StringBuffer buffer = new StringBuffer();
+            buffer.append("最新版本：").append(info.versionName).append("\n");
+            if(info.size !=0){
+                buffer.append("新版本大小：").append(size).append("\n\n");
+            }
+            buffer.append("更新内容\n\n").append(info.updateContent);
+            String content = buffer.toString();
             //String content = String.format("最新版本：%1$s\n新版本大小：%2$s\n\n更新内容\n\n%3$s", info.versionName, size, info.updateContent);
 
             final AlertDialog dialog = new AlertDialog.Builder(mContext).create();
 
-            dialog.setTitle("应用安装");
+            dialog.setTitle("已准备好新版安装包");
             dialog.setCancelable(false);
             dialog.setCanceledOnTouchOutside(false);
-
 
             float density = mContext.getResources().getDisplayMetrics().density;
             TextView tv = new TextView(mContext);
