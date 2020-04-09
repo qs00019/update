@@ -269,7 +269,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
     }
 
     void doFailure(UpdateError error) {
-        if (mIsManual || error.isError()) {
+        if (mIsManual && error.isError()) {
             mOnFailureListener.onFailure(error);
         }
     }

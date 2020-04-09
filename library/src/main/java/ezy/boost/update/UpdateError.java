@@ -36,7 +36,8 @@ public class UpdateError extends Throwable {
     @Override
     public String toString() {
         if (isError()) {
-            return "[" + code + "]" + getMessage();
+            //return "[" + code + "]" + getMessage();
+            return getMessage();
         }
         return getMessage();
     }
