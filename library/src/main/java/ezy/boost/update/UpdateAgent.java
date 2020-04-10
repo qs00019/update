@@ -172,7 +172,7 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
         } else {
             mTmpFile.renameTo(mApkFile);
             if (mInfo.isAutoInstall) {
-                if(mIsManual)
+                if(mIsManual || !mInfo.isSilent)
                     doInstall();
                 else {
                     mInstallPrompter.prompt(this, getInfo());
@@ -394,11 +394,16 @@ class UpdateAgent implements ICheckAgent, IUpdateAgent, IDownloadAgent {
 
             DialogInterface.OnClickListener listener = new DefaultInstallClickListener(agent);
 
-            tv.setText(content);
-            dialog.setButton(DialogInterface.BUTTON_POSITIVE, "立即安装", listener);
-            dialog.setButton(DialogInterface.BUTTON_NEGATIVE, "以后再说", listener);
-            if (info.isIgnorable) {
-                dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "忽略该版", listener);
+            if (info.isForce) {
+                tv.setText("您需要更新应用才能继续使用\n\n" + content);
+                dialog.setButton(DialogInterface.BUTTON_POSITIVE, "确定", listener);
+            } else {
+                tv.setText(content);
+                dialog.setButton(DialogInterface.BUTTON_POSITIVE, "立即安装", listener);
+                dialog.setButton(DialogInterface.BUTTON_NEGATIVE, "以后再说", listener);
+                if (info.isIgnorable) {
+                    dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "忽略该版", listener);
+                }
             }
             dialog.show();
         }
