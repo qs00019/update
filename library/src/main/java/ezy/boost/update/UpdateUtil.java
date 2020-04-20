@@ -96,7 +96,16 @@ public class UpdateUtil {
     public static void ensureExternalCacheDir(Context context) {
         File file = context.getExternalCacheDir();
         if (file == null) {
-            file = new File(context.getExternalFilesDir("").getParentFile(), "cache");
+            File dir = context.getExternalFilesDir("");
+            if(dir != null){
+                File parent = dir.getParentFile();
+                if(parent != null){
+                    file = new File(parent, "cache");
+                }
+            }
+        }
+        if(file == null){
+            file = context.getCacheDir();
         }
         if (file != null) {
             file.mkdirs();
@@ -228,6 +237,7 @@ public class UpdateUtil {
         if (connectivity == null) {
             return false;
         }
+
         NetworkInfo info = connectivity.getActiveNetworkInfo();
         return info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_WIFI;
     }

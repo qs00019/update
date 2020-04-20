@@ -29,6 +29,11 @@ public class UpdateError extends Throwable {
         super(make(code, message));
         this.code = code;
     }
+
+    public boolean isNeedShow() {
+        return code >= 1002;
+    }
+
     public boolean isError() {
         return code >= 2000;
     }
